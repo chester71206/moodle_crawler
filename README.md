@@ -1,1 +1,2 @@
+```bash
 pip install selenium
