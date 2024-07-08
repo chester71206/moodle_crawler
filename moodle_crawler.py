@@ -14,15 +14,67 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException
 import shutil
 import chardet
 import certifi
+import tkinter as tk
+from tkinter import ttk
 #from selenium.webdriver.support.ui import WebDriverWait
 #from selenium.webdriver.support import expected_conditions as EC
+def create_ui(courses):
+    # 創建主窗口
+    root = tk.Tk()
+    root.title("選擇課程")  # 設置窗口標題
 
+    # 創建包含滾動條的框架
+    frame = ttk.Frame(root)
+    canvas = tk.Canvas(frame)
+    scrollbar = ttk.Scrollbar(frame, orient="vertical", command=canvas.yview)
+    scrollable_frame = ttk.Frame(canvas)
+
+    # 配置畫布以適應滾動區域
+    scrollable_frame.bind(
+        "<Configure>",
+        lambda e: canvas.configure(
+            scrollregion=canvas.bbox("all")  # 更新滾動區域
+        )
+    )
+
+    # 將可滾動框架添加到畫布中
+    canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+    canvas.configure(yscrollcommand=scrollbar.set)  # 將滾動條與畫布關聯
+
+    # 布局設置
+    frame.pack(fill="both", expand=True)
+    canvas.pack(side="left", fill="both", expand=True)
+    scrollbar.pack(side="right", fill="y")
+
+    check_vars = []  # 用於存儲每個Checkbutton的變量
+    for i, course in enumerate(courses):
+        var = tk.BooleanVar()  # 為每個課程創建一個BooleanVar變量
+        checkbutton = tk.Checkbutton(scrollable_frame, text=course, variable=var)  # 創建Checkbutton
+        checkbutton.pack(anchor='w')  # 將Checkbutton添加到可滾動框架中
+        check_vars.append((i, var))  # 將課程索引和變量存儲到列表中
+
+    check_backup = []  # 定義存儲選擇結果的列表
+
+    def on_submit():
+        nonlocal check_backup  # 使用nonlocal關鍵字確保修改外部變量
+        # 獲取被選中的課程索引
+        check_backup = [i for i, var in check_vars if var.get()]
+        print("選擇的課程索引:", check_backup)
+        root.destroy()  # 關閉窗口
+
+    # 創建提交按鈕並設置其命令
+    submit_button = ttk.Button(root, text="提交", command=on_submit)
+    submit_button.pack()
+
+    root.mainloop()  # 開始主事件循環
+
+    return check_backup  # 返回選擇的課程索引
 
 
 desktop_path = Path.home() / "Desktop"
 
 # 要創建的資料夾名稱
-base_folder_name = "moodle備份"
+base_folder_name = "moodle備份5"
 base_folder_path = desktop_path / base_folder_name
 
 # 檢查資料夾是否存在，如果不存在就創建
@@ -75,8 +127,32 @@ try:
 
     original_window = driver.current_window_handle
     Target_classes = driver.find_elements(By.CSS_SELECTOR, '.column.c1')
+    courses = []  # 用於存儲課程名稱的列表=[]
+    for i in range(0,len(Target_classes)):
+        target_class = Target_classes[i].find_element(By.TAG_NAME, 'a')  # 表示幾個課程
 
+        div_element = driver.find_elements(By.XPATH, '//div[@class="column c1"]')
+
+        # 獲取 div 元素內的文字內容
+        text = div_element[i].text
+        if '/' in text:
+            text = text.split('/')[1]
+        if ':' in text:
+            text = text.split(':')[0]
+        courses.append(text)
+        print(text) #所有課程的名稱     
+    selected_courses_indices = create_ui(courses)
+
+    # 處理選擇的課程
+    print("被選中的課程索引:", selected_courses_indices)
+        
     for i in range(len(Target_classes)):
+        flag=0
+        for j in range(0,len(selected_courses_indices)):
+            if selected_courses_indices[j]==i:
+                flag=1
+        if flag==0:
+            continue
         try:
             target_classes = driver.find_elements(By.CSS_SELECTOR, '.column.c1')
             target_class = target_classes[i].find_element(By.TAG_NAME, 'a')  # 表示幾個課程
