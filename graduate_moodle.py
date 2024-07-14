@@ -102,7 +102,7 @@ prefs = {
 chrome_options.add_experimental_option("prefs", prefs)
 driver = webdriver.Chrome(options=chrome_options)
 
-#driver_wait = WebDriverWait(driver, 2) # 設置driver等待時間
+driver_wait = WebDriverWait(driver, 2) # 設置driver等待時間
 try:
     driver.get('https://i.nccu.edu.tw/Login.aspx?app=moodle&ReturnUrl=%2fsso_app%2fMoodleSSO.aspx')
 
